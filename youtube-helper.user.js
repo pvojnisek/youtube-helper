@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Helper
 // @namespace    https://github.com/pvojnisek/youtube-helper
-// @version      0.5.0
+// @version      0.5.1
 // @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (slider), plus options to hide Shorts everywhere and the end-of-video suggestion overlays (end cards, end-screen grid, info cards) — all from a live-applying in-page settings panel.
 // @author       Peter Vojnisek
 // @license      MIT
@@ -496,7 +496,8 @@
       ],
       { duration: 140, easing: "cubic-bezier(.2,.8,.2,1)" },
     );
-    slider.focus(); // arrow keys then nudge the max-speed slider
+    // Intentionally focus nothing: a focused slider/checkbox draws a focus ring.
+    // Esc still closes (handled on the window listener, not via panel focus).
   }
   function closePanel() {
     if (panel) panel.style.display = "none";

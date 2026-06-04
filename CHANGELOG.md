@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-05
+
+### Fixed
+- Opening the settings panel no longer focuses the slider, which drew an unwanted
+  focus ring around it. The panel now opens with no active control (Esc still
+  closes it, via the window listener).
+
 ## [0.5.0] - 2026-06-05
 
 ### Added

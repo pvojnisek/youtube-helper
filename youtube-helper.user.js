@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         YouTube Helper
 // @namespace    https://github.com/pvojnisek/youtube-helper
-// @version      0.3.0
-// @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum, and an option to hide Shorts everywhere (in-page settings panel).
+// @version      0.4.0
+// @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (slider), and an option to hide Shorts everywhere (live-applying in-page settings panel).
 // @author       Peter Vojnisek
 // @license      MIT
 // @match        *://*.youtube.com/*
@@ -27,7 +27,8 @@
   // Stored on the youtube.com origin; no GM_* APIs, so it behaves the same under
   // any userscript manager (Violentmonkey, Tampermonkey, Greasemonkey, ...).
   const LS_KEY = "ythelper:config";
-  const HARD_MAX = 16; // browsers cap HTMLMediaElement.playbackRate around here
+  // The settings slider picks the playback-speed *ceiling* within this range.
+  const RATE_RANGE = { min: 2, max: 5, step: 0.25 };
   const DEFAULTS = { maxRate: 5, minRate: 0.1, step: 0.25, hideShorts: true };
 
   function loadConfig() {
@@ -265,20 +266,40 @@
         "text-shadow:0 1px 2px rgba(0,0,0,.4)",
     );
 
-    const label = make("label", "display:block;margin-bottom:14px;opacity:.95");
-    label.appendChild(document.createTextNode("Max speed (×)"));
-    const input = make(
-      "input",
-      "display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:8px 10px;" +
-        "border-radius:12px;border:1px solid rgba(255,255,255,.25);" +
-        "background:rgba(255,255,255,.1);color:#fff;font:600 14px system-ui;" +
-        "outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)",
+    // Max-speed slider. The value display updates live while dragging (`input`);
+    // the value is persisted only when the user lets go (`change`).
+    const speedWrap = make("div", "margin-bottom:16px");
+    const speedHead = make(
+      "div",
+      "display:flex;justify-content:space-between;align-items:baseline;" +
+        "margin-bottom:8px;opacity:.95",
     );
-    input.type = "number";
-    input.min = "1";
-    input.max = String(HARD_MAX);
-    input.step = "0.25";
-    label.appendChild(input);
+    speedHead.appendChild(make("span", null, "Max speed"));
+    const speedVal = make("span", "font:600 14px system-ui");
+    speedHead.appendChild(speedVal);
+    const slider = make(
+      "input",
+      "display:block;width:100%;margin:0;accent-color:#30d158;cursor:pointer",
+    );
+    slider.type = "range";
+    slider.min = String(RATE_RANGE.min);
+    slider.max = String(RATE_RANGE.max);
+    slider.step = String(RATE_RANGE.step);
+    speedWrap.appendChild(speedHead);
+    speedWrap.appendChild(slider);
+    const fmtRate = (v) => parseFloat(v).toFixed(2) + "×";
+    slider.addEventListener("input", () => {
+      speedVal.textContent = fmtRate(slider.value); // live preview, no save yet
+    });
+    slider.addEventListener("change", () => {
+      // Persist once the user releases the slider.
+      config.maxRate = Math.min(
+        RATE_RANGE.max,
+        Math.max(RATE_RANGE.min, parseFloat(slider.value)),
+      );
+      saveConfig();
+      toast("Max: " + config.maxRate + "×");
+    });
 
     // "Hide Shorts" toggle — applies live (independent of Save/Cancel) so the
     // effect is visible immediately; state is persisted on change.
@@ -301,67 +322,51 @@
       toast(shortsCb.checked ? "Shorts hidden" : "Shorts shown");
     });
 
-    // Glass pill buttons with hover brighten.
-    const pill =
-      "padding:7px 18px;border-radius:999px;cursor:pointer;color:#fff;" +
-      "font:600 13px system-ui;border:1px solid rgba(255,255,255,.25);" +
-      "backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);" +
-      "box-shadow:inset 0 1px 0 rgba(255,255,255,.4);transition:filter .15s;";
-    const cancel = make("button", null, "Cancel");
+    // Everything applies live now, so there's no Save/Cancel — a single ✕ in the
+    // top-right corner dismisses the panel (Esc and the gear toggle also close it).
+    const closeX = make("button", null, "✕");
     hoverable(
-      cancel,
-      pill + "background:rgba(255,255,255,.12);",
-      "filter:brightness(1.4);",
+      closeX,
+      "position:absolute;top:14px;right:16px;width:26px;height:26px;padding:0;" +
+        "display:flex;align-items:center;justify-content:center;border-radius:50%;" +
+        "border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);" +
+        "color:#fff;font:400 14px/1 system-ui;cursor:pointer;" +
+        "box-shadow:inset 0 1px 0 rgba(255,255,255,.3);transition:filter .15s",
+      "filter:brightness(1.5)",
     );
-    const saveBtn = make("button", null, "Save");
-    hoverable(
-      saveBtn,
-      pill + "background:rgba(48,209,88,.55);border-color:rgba(255,255,255,.35);",
-      "filter:brightness(1.15);",
-    );
-    const actions = make(
-      "div",
-      "display:flex;gap:10px;justify-content:flex-end",
-    );
-    actions.appendChild(cancel);
-    actions.appendChild(saveBtn);
+    closeX.title = "Close";
+    closeX.setAttribute("aria-label", "Close settings");
 
+    // Header doubles as the drag handle; pad the right so the title clears the ✕.
     const header = make(
       "div",
-      "font-weight:600;font-size:15px;margin-bottom:12px;cursor:move;" +
-        "user-select:none;-webkit-user-select:none",
+      "font-weight:600;font-size:15px;margin-bottom:12px;padding-right:30px;" +
+        "cursor:move;user-select:none;-webkit-user-select:none",
       "YouTube Helper — settings",
     );
     makeDraggable(header, panel);
 
+    panel.appendChild(closeX);
     panel.appendChild(header);
-    panel.appendChild(label);
+    panel.appendChild(speedWrap);
     panel.appendChild(shortsRow);
-    panel.appendChild(actions);
     panel.appendChild(shortcutRows());
 
-    const save = () => {
-      const val = parseFloat(input.value);
-      if (!isNaN(val)) {
-        config.maxRate = Math.min(HARD_MAX, Math.max(1, val));
-        saveConfig();
-        toast("Max: " + config.maxRate + "×");
-      }
-      closePanel();
-    };
-    saveBtn.addEventListener("click", save);
-    cancel.addEventListener("click", closePanel);
+    closeX.addEventListener("click", closePanel);
     panel.addEventListener("keydown", (e) => {
-      e.stopPropagation(); // keep typing out of the page's shortcut handlers
-      if (e.key === "Escape") closePanel();
-      else if (e.key === "Enter") save();
+      e.stopPropagation(); // keep the page's shortcut handlers out of the panel
+      if (e.key === "Escape" || e.key === "Enter") closePanel();
     });
     document.documentElement.appendChild(panel);
   }
   function openPanel() {
     if (!panel) buildPanel();
-    const input = panel.querySelector('input[type="number"]');
-    input.value = config.maxRate;
+    const slider = panel.querySelector('input[type="range"]');
+    slider.value = Math.min(
+      RATE_RANGE.max,
+      Math.max(RATE_RANGE.min, config.maxRate),
+    );
+    slider.dispatchEvent(new Event("input")); // refresh the value label (no save)
     panel.querySelector('input[type="checkbox"]').checked = config.hideShorts;
     panel.style.display = "block";
     // Scale + fade entrance via the Web Animations API (no stylesheet needed).
@@ -377,8 +382,7 @@
       ],
       { duration: 140, easing: "cubic-bezier(.2,.8,.2,1)" },
     );
-    input.focus();
-    input.select();
+    slider.focus(); // arrow keys then nudge the max-speed slider
   }
   function closePanel() {
     if (panel) panel.style.display = "none";

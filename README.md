@@ -32,9 +32,12 @@ longer pops up, while the plain (un-shifted) `,` / `.` frame-stepping still work
 
 ### 2. Settings panel
 
-Press `Shift`+`S` to open a small in-page settings panel where you can change the
-**maximum playback speed** (default 5×, capped at 16×). The value is stored in
-`localStorage`, so it persists across sessions and works under any userscript
+Press `Shift`+`S` (or click the toolbar gear) to open a small in-page settings
+panel. Settings apply **live** — there's no Save button. A slider sets the
+**maximum playback speed** (range 2–5×); the value updates as you drag and is
+saved when you release it. A checkbox toggles **Hide Shorts** instantly. Dismiss
+the panel with the ✕ in its top-right corner (or `Esc`). All settings are stored
+in `localStorage`, so they persist across sessions and work under any userscript
 manager — no `GM_*` APIs are used, which keeps the script manager-independent.
 
 ### 3. Hide Shorts everywhere
@@ -63,7 +66,7 @@ link still plays, just in the standard player.
 ### Deferred / ideas
 
 - Close the settings panel on outside-click (deferred by choice for now; `Esc`
-  and the **Cancel** button already close it).
+  and the **✕** button already close it).
 - SVG-based Liquid Glass refraction layer for the panel (see
   [`ai-knowledge/`](ai-knowledge/)).
 

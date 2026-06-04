@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-04
+
+### Changed
+- Reworked the settings panel to apply changes live — no more Save/Cancel.
+  The maximum playback rate is now a slider (range 2–5×); its value updates in
+  the panel while dragging and is persisted when you release it. The panel is
+  dismissed with an ✕ in the top-right corner (Esc and the gear still close it).
+
 ## [0.3.0] - 2026-06-04
 
 ### Added

@@ -110,21 +110,21 @@ controls whether the **next** video plays automatically.
 
 ## Installation
 
-> Not published online yet — local development for now.
+> Not published online yet — install it locally.
 
-Recommended userscript manager: **[Violentmonkey](https://violentmonkey.github.io/)**
-(MIT, open source). Tampermonkey also works but is proprietary.
+Use **[Violentmonkey](https://violentmonkey.github.io/get-it/)** — it's open
+source (MIT), the same licence as this script. (Tampermonkey works too — no `GM_*`
+APIs are used — but it's proprietary.)
 
-### Local (current workflow)
+1. **Install Violentmonkey** from [its download page](https://violentmonkey.github.io/get-it/).
+   On Chromium (Chrome/Brave/Edge **138+**), also enable it: `chrome://extensions`
+   → Violentmonkey → **Details** → **Allow user scripts**. Firefox needs nothing
+   extra.
+2. **Add the script:** open `youtube-helper.user.js` in the browser and confirm the
+   install prompt (or paste it into a new Violentmonkey script and save).
 
-1. Install Violentmonkey in your browser.
-2. **Chromium / Brave (Manifest V3):** enable userscripts —
-   `brave://extensions` → Violentmonkey → **Details** → turn on
-   **Allow user scripts** (Chrome/Brave 138+). On older versions, enable
-   **Developer mode** on the extensions page instead.
-3. Load the script: open `youtube-helper.user.js` in the browser to get the
-   install prompt, or paste its contents into a new script in the Violentmonkey
-   dashboard, then save.
+Then open YouTube and press `Shift`+`S` to check it's running. For live-reload
+development, see [`ai-knowledge/`](ai-knowledge/).
 
 ### Auto-update (future)
 

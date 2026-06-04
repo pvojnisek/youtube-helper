@@ -102,6 +102,31 @@ Sources: [CSS-Tricks — Getting clarity on Apple's Liquid Glass](https://css-tr
 3. Update `README.md` (feature table / roadmap) and `CHANGELOG.md`.
 4. Bump `@version`.
 
+## Local development (live reload)
+
+No build step — edit `youtube-helper.user.js` and see changes in the browser
+without re-installing each time:
+
+1. **Serve the repo over localhost** (Python stdlib — nothing to install), run
+   from the project directory:
+   `python3 -m http.server 8080 --bind 127.0.0.1`
+2. **Install [Violentmonkey](https://violentmonkey.github.io/)** (MIT). On
+   Chromium / Brave 138+, enable it: `<browser>://extensions` → Violentmonkey →
+   *Details* → **Allow user scripts** (an MV3 requirement; Developer mode alone is
+   often not enough).
+3. **Track the file:** open `http://127.0.0.1:8080/youtube-helper.user.js` in the
+   browser; on Violentmonkey's install page click **Track external edits** and
+   keep that tab open. Every save then reinstalls the script automatically (no
+   `@version` bump needed for tracking).
+4. **Test:** reload the YouTube tab — an already-open page keeps the old version.
+
+Notes:
+- Don't drag-and-drop the `.user.js` onto a Violentmonkey page: in Chromium that
+  tends to trigger a *download* prompt instead of installing. The localhost route
+  is the reliable one (and avoids the risky "Allow access to file URLs").
+- Quick sanity check before reloading: `node --check youtube-helper.user.js`.
+- The file is served from disk, so editing in any editor works.
+
 ## Testing
 
 Manual, since there's no build/test harness:

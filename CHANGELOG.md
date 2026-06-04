@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-04
+
+### Fixed
+- `Esc` now closes the settings panel regardless of where focus is (previously it
+  only worked while a panel control was focused). Handled on the window listener.
+
+### Changed
+- `Enter` no longer closes the settings panel (it was a surprising accidental
+  close); use `Esc`, the ✕, or the gear.
+
 ## [0.4.0] - 2026-06-04
 
 ### Changed

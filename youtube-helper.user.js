@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Helper
 // @namespace    https://github.com/pvojnisek/youtube-helper
-// @version      0.4.0
+// @version      0.4.1
 // @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (slider), and an option to hide Shorts everywhere (live-applying in-page settings panel).
 // @author       Peter Vojnisek
 // @license      MIT
@@ -27,8 +27,10 @@
   // Stored on the youtube.com origin; no GM_* APIs, so it behaves the same under
   // any userscript manager (Violentmonkey, Tampermonkey, Greasemonkey, ...).
   const LS_KEY = "ythelper:config";
-  // The settings slider picks the playback-speed *ceiling* within this range.
+  // The settings slider picks the playback-speed *ceiling* (maxRate) in this range.
   const RATE_RANGE = { min: 2, max: 5, step: 0.25 };
+  // maxRate: user-configurable ceiling (the slider). minRate: absolute floor when
+  // slowing via Shift+, (unrelated to the slider's min). step: per-keypress delta.
   const DEFAULTS = { maxRate: 5, minRate: 0.1, step: 0.25, hideShorts: true };
 
   function loadConfig() {
@@ -111,6 +113,8 @@
   }
 
   // === Feature 3: hide Shorts everywhere =====================================
+  // (Numbered to match the README; placed before Feature 2 in source because it
+  // must run at document-start — set the attribute + redirect before first paint.)
   // Shorts are scattered across many surfaces, each a different custom element.
   // We hide them declaratively with ONE injected stylesheet gated on an attribute
   // (html[data-ythelper-hideshorts]) — `display:none` auto-catches nodes added
@@ -285,11 +289,13 @@
     slider.min = String(RATE_RANGE.min);
     slider.max = String(RATE_RANGE.max);
     slider.step = String(RATE_RANGE.step);
+    slider.setAttribute("aria-label", "Max speed");
     speedWrap.appendChild(speedHead);
     speedWrap.appendChild(slider);
     const fmtRate = (v) => parseFloat(v).toFixed(2) + "×";
     slider.addEventListener("input", () => {
       speedVal.textContent = fmtRate(slider.value); // live preview, no save yet
+      slider.setAttribute("aria-valuetext", fmtRate(slider.value)); // "2.50×"
     });
     slider.addEventListener("change", () => {
       // Persist once the user releases the slider.
@@ -353,10 +359,9 @@
     panel.appendChild(shortcutRows());
 
     closeX.addEventListener("click", closePanel);
-    panel.addEventListener("keydown", (e) => {
-      e.stopPropagation(); // keep the page's shortcut handlers out of the panel
-      if (e.key === "Escape" || e.key === "Enter") closePanel();
-    });
+    // Keep keys typed in the panel out of the page's shortcut handlers. (Escape
+    // is handled by the window listener so it works regardless of focus.)
+    panel.addEventListener("keydown", (e) => e.stopPropagation());
     document.documentElement.appendChild(panel);
   }
   function openPanel() {
@@ -469,6 +474,14 @@
   window.addEventListener(
     "keydown",
     function (e) {
+      // Escape closes the settings panel from anywhere — checked before the
+      // input guard below, since the panel's own slider/checkbox ARE inputs.
+      if (e.code === "Escape" && panel && panel.style.display !== "none") {
+        closePanel();
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
       if (inField(e.target)) return;
       if (e.ctrlKey || e.metaKey || e.altKey || !e.shiftKey) return; // Shift only
       let handled = false;

@@ -69,6 +69,14 @@ link still plays, just in the standard player.
   and the **✕** button already close it).
 - SVG-based Liquid Glass refraction layer for the panel (see
   [`ai-knowledge/`](ai-knowledge/)).
+- SPA-friendly Shorts redirect. Cold loads of `/shorts/<id>` redirect cleanly,
+  but redirecting on in-app `yt-navigate-finish` triggers a full document reload
+  instead of a soft SPA transition. A `history.replaceState`-based approach would
+  be smoother but is fragile against YouTube internals — deferred until it's worth
+  the regression risk.
+- Replace the 1s `setInterval` that re-injects the toolbar gear with a debounced
+  `MutationObserver` on the masthead (more event-driven, but the masthead mutates
+  often, so it needs careful debouncing to not be worse than the cheap poll).
 
 ## Installation
 

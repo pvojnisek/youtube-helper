@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-04
+
+### Added
+- Hide Shorts everywhere on YouTube (on by default), toggleable with a checkbox
+  in the settings panel. A single injected stylesheet — gated on a root attribute
+  (`html[data-ythelper-hideshorts]`) — hides Shorts shelves, sections, grid/search
+  tiles, and the sidebar Shorts entries; `display:none` automatically covers nodes
+  added later by YouTube's SPA, so no polling is needed. The `/shorts/<id>` player
+  page (which CSS can't touch) is redirected to the normal watch page
+  (`/watch?v=<id>`) on load and after every in-app navigation, so a Short opened
+  from outside plays in the standard player.
+
 ## [0.2.1] - 2026-06-04
 
 ### Fixed

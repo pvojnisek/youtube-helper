@@ -58,6 +58,37 @@ controls), bind to `event.code`. Only bind to `event.key` when you genuinely mea
 "the character the user typed". When diagnosing a "shortcut doesn't work on my
 keyboard" report, first check whether the app is character-bound.
 
+## Domain note: hiding Shorts across YouTube's surfaces
+
+Shorts are not one thing — they surface as many *different* custom elements, so a
+single selector never covers them. The durable approach (used by Feature 3):
+
+- **Target component element names, not CSS classes.** `ytd-reel-shelf-renderer`,
+  `ytd-rich-section-renderer`, `ytd-guide-entry-renderer`, etc. are far more stable
+  across YouTube updates than generated class names. Add `:has(a[href^="/shorts"])`
+  to also catch the *wrapper* row around a shelf/tile so the whole block disappears,
+  not just the inner link.
+- **Hide with one injected stylesheet, gated on a root attribute** (`html[data-…]`).
+  A `display:none` rule auto-applies to nodes YouTube's SPA adds *later* — no
+  polling, no MutationObserver for the hiding itself. Flipping the attribute toggles
+  every surface at once (instant, no re-injection). This is what uBlock cosmetic
+  filters do; it beats the common `setInterval(removeShorts, 1000)` userscripts,
+  which flicker and waste cycles.
+- **CSS can't reach the `/shorts/<id>` player page.** Handle it in JS: redirect to
+  `/watch?v=<id>` on load *and* on `yt-navigate-finish` (YouTube's SPA "navigation
+  done" event), so a Short opened from an external link plays in the normal player.
+- **Surfaces to cover:** left sidebar (full + mini guide), home/Subscriptions
+  shelves and their section wrappers, individual grid/search/related tiles, the
+  newer lit `*-view-model` elements, and the channel-page "Shorts" tab (text-based,
+  so its attribute selector is the brittle one — verify it in-browser).
+
+**On injecting a `<style>` (re: principle 6):** building a `<style>` element with
+`createElement` + `textContent` is **not** a Trusted Types violation — Trusted Types
+(`require-trusted-types-for 'script'`) only governs *script* sinks like `innerHTML`,
+not stylesheet text. Earlier features avoided a stylesheet by *stylistic choice*
+(hover via inline styles), not because one is blocked. A `<style>` is the right tool
+when you must hide many dynamic nodes declaratively.
+
 ## UI: Liquid Glass styling
 
 The settings panel and toast approximate Apple's **Liquid Glass** material

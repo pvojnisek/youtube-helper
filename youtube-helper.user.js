@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         YouTube Helper
 // @namespace    https://github.com/pvojnisek/youtube-helper
-// @version      0.2.1
-// @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (in-page settings panel).
+// @version      0.3.0
+// @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum, and an option to hide Shorts everywhere (in-page settings panel).
 // @author       Peter Vojnisek
 // @license      MIT
 // @match        *://*.youtube.com/*
@@ -28,7 +28,7 @@
   // any userscript manager (Violentmonkey, Tampermonkey, Greasemonkey, ...).
   const LS_KEY = "ythelper:config";
   const HARD_MAX = 16; // browsers cap HTMLMediaElement.playbackRate around here
-  const DEFAULTS = { maxRate: 5, minRate: 0.1, step: 0.25 };
+  const DEFAULTS = { maxRate: 5, minRate: 0.1, step: 0.25, hideShorts: true };
 
   function loadConfig() {
     try {
@@ -108,6 +108,69 @@
       el.style.opacity = "0";
     }, 800);
   }
+
+  // === Feature 3: hide Shorts everywhere =====================================
+  // Shorts are scattered across many surfaces, each a different custom element.
+  // We hide them declaratively with ONE injected stylesheet gated on an attribute
+  // (html[data-ythelper-hideshorts]) — `display:none` auto-catches nodes added
+  // later by YouTube's SPA, so no polling / MutationObserver is needed. The toggle
+  // just flips the attribute. Selectors target component NAMES (stable across
+  // updates) + `:has(a[href^="/shorts"])` to also remove the wrapper rows.
+  //
+  // CSS can't touch the /shorts/<id> *player* page, so we additionally redirect it
+  // to the normal watch page (/watch?v=<id>) on load and on SPA navigation.
+  const SHORTS_SELECTORS = [
+    // Left sidebar (full guide + mini guide)
+    'ytd-guide-entry-renderer:has(a[title="Shorts"])',
+    'ytd-mini-guide-entry-renderer:has(a[title="Shorts"])',
+    'ytd-guide-entry-renderer:has(a[href^="/shorts"])',
+    'ytd-mini-guide-entry-renderer:has(a[href^="/shorts"])',
+    // Home / subscriptions: horizontal Shorts shelves + their section wrappers
+    "ytd-reel-shelf-renderer",
+    "ytd-rich-shelf-renderer[is-shorts]",
+    "ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts])",
+    'ytd-rich-section-renderer:has(a[href^="/shorts"])',
+    'grid-shelf-view-model:has(a[href^="/shorts"])',
+    // Individual Shorts tiles across grids / search / related
+    'ytd-rich-item-renderer:has(a[href^="/shorts"])',
+    'ytd-grid-video-renderer:has(a[href^="/shorts"])',
+    'ytd-video-renderer:has(a[href^="/shorts"])',
+    "ytd-reel-item-renderer",
+    "ytm-shorts-lockup-view-model",
+    "ytm-shorts-lockup-view-model-v2",
+    // Channel page "Shorts" tab (attribute may shift; verify in-browser)
+    'yt-tab-shape[tab-title="Shorts"]',
+    'tp-yt-paper-tab:has([href$="/shorts"])',
+  ];
+  const SHORTS_CSS =
+    SHORTS_SELECTORS.map((s) => "html[data-ythelper-hideshorts] " + s).join(
+      ",\n",
+    ) + "{display:none !important}";
+
+  function injectShortsCss() {
+    if (document.getElementById("ythelper-shorts-css")) return;
+    const style = document.createElement("style");
+    style.id = "ythelper-shorts-css";
+    style.textContent = SHORTS_CSS; // textContent, not innerHTML → Trusted-Types-safe
+    (document.head || document.documentElement).appendChild(style);
+  }
+  function applyShorts() {
+    // Toggling the root attribute switches the whole stylesheet on/off at once.
+    document.documentElement.toggleAttribute(
+      "data-ythelper-hideshorts",
+      config.hideShorts,
+    );
+  }
+  function redirectShorts() {
+    if (!config.hideShorts) return;
+    const m = location.pathname.match(/^\/shorts\/([^/?#]+)/);
+    if (m) location.replace("/watch?v=" + m[1]); // play as a normal video
+  }
+  injectShortsCss();
+  applyShorts(); // run at document-start → no flash of Shorts before hide
+  redirectShorts();
+  // YouTube is an SPA; re-check after every in-app navigation.
+  window.addEventListener("yt-navigate-finish", redirectShorts, true);
 
   // === Feature 2: in-page settings panel (toggle with Shift+S) ===============
   // Plain DOM + localStorage, no GM_* APIs → manager-independent and CSP-safe
@@ -217,6 +280,27 @@
     input.step = "0.25";
     label.appendChild(input);
 
+    // "Hide Shorts" toggle — applies live (independent of Save/Cancel) so the
+    // effect is visible immediately; state is persisted on change.
+    const shortsRow = make(
+      "label",
+      "display:flex;align-items:center;gap:10px;margin-bottom:14px;" +
+        "cursor:pointer;user-select:none;-webkit-user-select:none;opacity:.95",
+    );
+    const shortsCb = document.createElement("input");
+    shortsCb.type = "checkbox";
+    shortsCb.style.cssText =
+      "width:18px;height:18px;margin:0;accent-color:#30d158;cursor:pointer";
+    shortsRow.appendChild(shortsCb);
+    shortsRow.appendChild(document.createTextNode("Hide Shorts everywhere"));
+    shortsCb.addEventListener("change", () => {
+      config.hideShorts = shortsCb.checked;
+      saveConfig();
+      applyShorts();
+      redirectShorts();
+      toast(shortsCb.checked ? "Shorts hidden" : "Shorts shown");
+    });
+
     // Glass pill buttons with hover brighten.
     const pill =
       "padding:7px 18px;border-radius:999px;cursor:pointer;color:#fff;" +
@@ -252,6 +336,7 @@
 
     panel.appendChild(header);
     panel.appendChild(label);
+    panel.appendChild(shortsRow);
     panel.appendChild(actions);
     panel.appendChild(shortcutRows());
 
@@ -275,8 +360,9 @@
   }
   function openPanel() {
     if (!panel) buildPanel();
-    const input = panel.querySelector("input");
+    const input = panel.querySelector('input[type="number"]');
     input.value = config.maxRate;
+    panel.querySelector('input[type="checkbox"]').checked = config.hideShorts;
     panel.style.display = "block";
     // Scale + fade entrance via the Web Animations API (no stylesheet needed).
     // Preserve any existing transform (centering, or "none" after a drag).

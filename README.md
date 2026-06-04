@@ -37,11 +37,27 @@ Press `Shift`+`S` to open a small in-page settings panel where you can change th
 `localStorage`, so it persists across sessions and works under any userscript
 manager — no `GM_*` APIs are used, which keeps the script manager-independent.
 
+### 3. Hide Shorts everywhere
+
+Don't want to see YouTube Shorts? This option (on by default) removes them across
+the whole interface — the home and Subscriptions feed shelves, search results,
+grid tiles, and the **Shorts** entries in the left sidebar — so no Shorts links or
+recommendations remain. Toggle it any time with the **Hide Shorts everywhere**
+checkbox in the settings panel.
+
+It works by injecting one stylesheet that hides every Shorts surface (gated on a
+root attribute, so flipping the checkbox switches it instantly), targeting
+YouTube's component element names rather than fragile CSS classes. Because CSS
+can't act on the dedicated `/shorts/<id>` player page, that URL is redirected to
+the normal watch page (`/watch?v=<id>`) — so a Short you open from an external
+link still plays, just in the standard player.
+
 ## Roadmap
 
 - [x] Keyboard-layout-independent playback speed
 - [x] In-page settings panel (configurable max speed), Liquid Glass styled
 - [x] Toolbar gear button, draggable panel, open animation
+- [x] Hide Shorts everywhere (toggle), with `/shorts/` → `/watch` redirect
 - [ ] More features — one step at a time
 
 ### Deferred / ideas

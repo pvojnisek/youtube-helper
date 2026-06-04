@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Helper
 // @namespace    https://github.com/pvojnisek/youtube-helper
-// @version      0.2.0
+// @version      0.2.1
 // @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (in-page settings panel).
 // @author       Peter Vojnisek
 // @license      MIT
@@ -306,6 +306,16 @@
   // Injected into YouTube's masthead, between the notifications bell and the
   // avatar. YouTube is an SPA that re-renders the masthead, so we re-insert the
   // button whenever it goes missing (cheap id check on an interval).
+  //
+  // Icon colour is themed explicitly: YouTube marks its dark theme with a `dark`
+  // attribute on <html> (and <ytd-app>). `color: inherit` / CSS vars proved
+  // unreliable here, so we read that attribute and react to theme switches.
+  function isDark() {
+    return (
+      document.documentElement.hasAttribute("dark") ||
+      !!document.querySelector("ytd-app[dark]")
+    );
+  }
   function svgGear() {
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
@@ -334,14 +344,15 @@
       "button",
       "width:40px;height:40px;display:inline-flex;align-items:center;" +
         "justify-content:center;padding:0;border:0;border-radius:50%;cursor:pointer;" +
-        "background:transparent;color:var(--yt-spec-text-primary,#fff);" +
-        "opacity:.9;transition:background .15s,opacity .15s",
+        "background:transparent;" +
+        "opacity:.9;transition:background .15s,opacity .15s,color .15s",
     );
     gear.id = "ythelper-gear";
     gear.title = "YouTube Helper settings (Shift+S)";
     gear.setAttribute("aria-label", "YouTube Helper settings");
+    gear.style.color = isDark() ? "#f1f1f1" : "#0f0f0f";
     gear.addEventListener("mouseenter", () => {
-      gear.style.background = "rgba(255,255,255,.12)";
+      gear.style.background = "rgba(128,128,128,.25)";
       gear.style.opacity = "1";
     });
     gear.addEventListener("mouseleave", () => {
@@ -355,6 +366,14 @@
   }
   ensureGear();
   setInterval(ensureGear, 1000);
+  // Re-theme the gear when YouTube's theme toggles (the `dark` attr on <html>).
+  new MutationObserver(() => {
+    const gear = document.getElementById("ythelper-gear");
+    if (gear) gear.style.color = isDark() ? "#f1f1f1" : "#0f0f0f";
+  }).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["dark"],
+  });
 
   // === Key bindings ==========================================================
   window.addEventListener(

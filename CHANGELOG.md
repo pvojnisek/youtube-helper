@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-04
+
+### Fixed
+- Toolbar gear icon was invisible against the masthead (it relied on
+  `color: inherit` / a YouTube CSS variable that didn't resolve). It now reads
+  YouTube's `dark` attribute on `<html>` and sets an explicit colour, updating
+  live when the theme is toggled.
+
 ## [0.2.0] - 2026-06-04
 
 ### Added

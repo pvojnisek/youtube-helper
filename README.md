@@ -1,8 +1,7 @@
 # YouTube Helper
 
 A personal [userscript](https://en.wikipedia.org/wiki/Userscript) that adds
-quality-of-life features to YouTube. Built one step at a time — currently one
-feature, with more planned.
+quality-of-life features to YouTube. Built one step at a time.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -25,15 +24,32 @@ character, so it works regardless of keyboard layout:
 | `Shift` + `,`    | Slow down (−0.25×) |
 | `Shift` + `.`    | Speed up (+0.25×)  |
 | `Shift` + `0`    | Reset to 1×        |
+| `Shift` + `S`    | Open/close settings panel |
 
 A small on-screen toast shows the current rate. The handler runs in the capture
 phase and swallows the event before YouTube's own handler, so the help overlay no
 longer pops up, while the plain (un-shifted) `,` / `.` frame-stepping still works.
 
+### 2. Settings panel
+
+Press `Shift`+`S` to open a small in-page settings panel where you can change the
+**maximum playback speed** (default 5×, capped at 16×). The value is stored in
+`localStorage`, so it persists across sessions and works under any userscript
+manager — no `GM_*` APIs are used, which keeps the script manager-independent.
+
 ## Roadmap
 
 - [x] Keyboard-layout-independent playback speed
+- [x] In-page settings panel (configurable max speed), Liquid Glass styled
+- [x] Toolbar gear button, draggable panel, open animation
 - [ ] More features — one step at a time
+
+### Deferred / ideas
+
+- Close the settings panel on outside-click (deferred by choice for now; `Esc`
+  and the **Cancel** button already close it).
+- SVG-based Liquid Glass refraction layer for the panel (see
+  [`ai-knowledge/`](ai-knowledge/)).
 
 ## Installation
 

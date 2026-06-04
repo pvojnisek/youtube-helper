@@ -34,6 +34,13 @@ See [`../README.md`](../README.md) for the user-facing overview and
 5. **Be a good keyboard citizen.** Ignore events when typing in inputs
    (`INPUT`/`TEXTAREA`/`SELECT`/`contenteditable`), and bail out when unexpected
    modifiers (`alt`/`ctrl`/`meta`) are held.
+6. **Build DOM nodes, never assign `innerHTML`.** YouTube enforces a Trusted
+   Types CSP (`require-trusted-types-for 'script'`), so `element.innerHTML = "…"`
+   throws *"This document requires 'TrustedHTML' assignment"* and silently breaks
+   the feature. Construct UI with `document.createElement` + `textContent` +
+   `appendChild` instead (see the settings panel). Reading via `querySelector` is
+   fine; only string-to-HTML assignment is blocked. Inline `element.style.cssText`
+   is allowed.
 
 ## Domain note: why keyboard layout matters
 
@@ -50,6 +57,33 @@ trigger an *unrelated* shortcut (e.g. `?` opens YouTube's help overlay).
 controls), bind to `event.code`. Only bind to `event.key` when you genuinely mean
 "the character the user typed". When diagnosing a "shortcut doesn't work on my
 keyboard" report, first check whether the app is character-bound.
+
+## UI: Liquid Glass styling
+
+The settings panel and toast approximate Apple's **Liquid Glass** material
+(introduced at WWDC 2025; iOS/macOS 26) with pure CSS — no images, no SVG:
+
+- **Frosted translucency:** `backdrop-filter: blur(24px) saturate(180%)` (with the
+  `-webkit-` prefix) over a translucent fill, so the video behind shows through,
+  blurred and colour-boosted.
+- **Dark-tinted glass** (`linear-gradient(135deg, rgba(70,70,80,.5),
+  rgba(30,30,38,.55))`) rather than light glass: keeps white text legible over
+  bright video frames — the known weak spot of glass UIs (variable contrast).
+- **Rim highlight + depth:** `inset 0 1px 0 rgba(255,255,255,.5)` for the lit top
+  edge, a soft outer `box-shadow` for separation, large `border-radius` (24px
+  panel, 999px pill buttons), and `text-shadow` for legibility.
+- **Hover** uses JS inline-style toggling (`hoverable()`), not a stylesheet, to
+  avoid injecting a `<style>` (stays within YouTube's CSP / Trusted Types — see
+  principle 6). All nodes are built with `createElement` + `style.cssText`.
+
+**Future (optional): SVG refraction.** The signature *liquid* distortion and
+specular ripple of real Liquid Glass needs an SVG filter layer (`feTurbulence` +
+`feDisplacementMap` + `feSpecularLighting`) composited over the `backdrop-filter`.
+More authentic but heavier and trickier; the current backdrop-blur version is the
+clean, performant approximation. Add it behind a flag if/when desired.
+
+Sources: [CSS-Tricks — Getting clarity on Apple's Liquid Glass](https://css-tricks.com/getting-clarity-on-apples-liquid-glass/),
+[Liquid Glass with CSS + SVG (dev.to)](https://dev.to/fabiosleal/how-to-create-the-apple-liquid-glass-effect-with-css-and-svg-2o06).
 
 ## Conventions
 

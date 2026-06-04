@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-04
+
+### Added
+- In-page settings panel (toggle with `Shift`+`S`) to configure the maximum
+  playback rate; stored in `localStorage`, so it works under any userscript
+  manager (no `GM_*` APIs).
+- Toolbar gear button injected into the YouTube masthead (between the
+  notifications bell and the avatar) that opens the settings panel.
+- Liquid Glass styling for the panel and toast (translucent `backdrop-filter`,
+  rim highlight, pill buttons), a shortcut cheat-sheet table, a draggable panel
+  header, and a scale + fade open animation.
+
+## [0.1.1] - 2026-06-04
+
+### Changed
+- Cap the maximum playback rate at 5× (previously 16×).
+
 ## [0.1.0] - 2026-06-04
 
 ### Added

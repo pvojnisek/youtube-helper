@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         YouTube Helper
 // @namespace    https://github.com/pvojnisek/youtube-helper
-// @version      0.5.1
-// @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (slider), plus options to hide Shorts everywhere and the end-of-video suggestion overlays (end cards, end-screen grid, info cards) — all from a live-applying in-page settings panel.
+// @version      0.6.0
+// @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (slider), an option to stop opened videos from auto-starting, and options to hide Shorts everywhere and the end-of-video suggestion overlays (end cards, end-screen grid, info cards) — all from a live-applying in-page settings panel.
 // @author       Peter Vojnisek
 // @license      MIT
 // @match        *://*.youtube.com/*
@@ -35,6 +35,7 @@
     maxRate: 5,
     minRate: 0.1,
     step: 0.25,
+    autoStart: true, // when off, an opened watch-page video loads paused
     hideShorts: true,
     hideEndCards: true, // creator end-screen cards overlaying the last seconds
     hideEndScreen: true, // the "more videos" grid when a video ends
@@ -229,6 +230,45 @@
   injectPlayerCss();
   applyPlayerHides();
 
+  // === Feature 5: control video auto-start ===================================
+  // When auto-start is OFF, a freshly opened watch-page video should load paused.
+  // YouTube auto-plays it, so we pause it back: a capture-phase 'play' listener on
+  // the document catches the video's (non-bubbling) play event and pauses it. We
+  // keep suppressing until a genuine user gesture on the player (pointer, or
+  // Space/K), so playback can still be started manually. Re-armed on every SPA nav
+  // (and at load); the panel toggle only changes config → it takes effect on the
+  // next video opened, never yanking the one you're already watching.
+  let suppressPlay = false;
+  function armAutoStart() {
+    suppressPlay = !config.autoStart && location.pathname.startsWith("/watch");
+  }
+  document.addEventListener(
+    "play",
+    (e) => {
+      if (suppressPlay && e.target instanceof HTMLVideoElement) e.target.pause();
+    },
+    true,
+  );
+  function allowPlay() {
+    suppressPlay = false; // a real user gesture means "play" → stop suppressing
+  }
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (e.target.closest && e.target.closest("#movie_player, video")) allowPlay();
+    },
+    true,
+  );
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if ((e.code === "Space" || e.code === "KeyK") && !inField(e.target)) allowPlay();
+    },
+    true,
+  );
+  window.addEventListener("yt-navigate-finish", armAutoStart, true);
+  armAutoStart();
+
   // === Feature 2: in-page settings panel (toggle with Shift+S) ===============
   // Plain DOM + localStorage, no GM_* APIs → manager-independent and CSP-safe
   // (no inline event handlers; listeners are attached programmatically).
@@ -365,6 +405,13 @@
     // highlight, hairline row separators). Each flips its setting immediately and
     // persists it; label on the left, checkbox on the right (settings-list style).
     const toggles = [
+      {
+        label: "Auto-start videos",
+        get: () => config.autoStart,
+        set: (v) => {
+          config.autoStart = v; // takes effect on the next video opened
+        },
+      },
       {
         label: "Hide Shorts everywhere",
         get: () => config.hideShorts,

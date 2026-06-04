@@ -35,9 +35,9 @@ longer pops up, while the plain (un-shifted) `,` / `.` frame-stepping still work
 Press `Shift`+`S` (or click the toolbar gear) to open a small in-page settings
 panel. Settings apply **live** — there's no Save button. A slider sets the
 **maximum playback speed** (range 2–5×); the value updates as you drag and is
-saved when you release it. A grouped list of checkboxes toggles **Hide Shorts**
-and the end-of-video overlays instantly. Dismiss the panel with the ✕ in its
-top-right corner (or `Esc`). All settings are stored
+saved when you release it. A grouped list of checkboxes toggles auto-start,
+**Hide Shorts**, and the end-of-video overlays instantly. Dismiss the panel with
+the ✕ in its top-right corner (or `Esc`). All settings are stored
 in `localStorage`, so they persist across sessions and work under any userscript
 manager — no `GM_*` APIs are used, which keeps the script manager-independent.
 
@@ -73,6 +73,16 @@ These live in the player's light DOM, so they're hidden with the same
 attribute-gated stylesheet as Shorts (one root attribute per toggle) — no polling,
 instant on/off.
 
+### 5. Stop videos from auto-starting
+
+By default YouTube starts playing a video the moment you open it. Turn off
+**Auto-start videos** in the settings panel and an opened watch page loads
+**paused** instead — start it yourself (click, or `Space`/`K`) when you're ready.
+It catches the video's `play` event in the capture phase and pauses it until your
+first real gesture on the player, so manual playback still works. This affects the
+*current* video — distinct from the player's **Autoplay** switch, which only
+controls whether the **next** video plays automatically.
+
 ## Roadmap
 
 - [x] Keyboard-layout-independent playback speed
@@ -80,6 +90,7 @@ instant on/off.
 - [x] Toolbar gear button, draggable panel, open animation
 - [x] Hide Shorts everywhere (toggle), with `/shorts/` → `/watch` redirect
 - [x] Hide end-of-video suggestions (end cards, end-screen grid, info cards)
+- [x] Stop opened videos from auto-starting (toggle)
 - [ ] More features — one step at a time
 
 ### Deferred / ideas

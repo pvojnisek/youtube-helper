@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-05
+
+### Added
+- Option to stop opened videos from auto-starting (toggle in the settings panel,
+  on by default = videos still auto-play). When off, a watch-page video loads
+  **paused**: a capture-phase `play` listener pauses it until you start playback
+  with a click or `Space`/`K`. Takes effect on the next video opened, so it never
+  pauses the video you're already watching. Note this is the *current* video —
+  distinct from the player's "Autoplay" switch (which only auto-advances to the
+  *next* video).
+
 ## [0.5.1] - 2026-06-05
 
 ### Fixed

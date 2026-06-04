@@ -105,6 +105,19 @@ the end **grid** only fills the player once the video ends; **info cards** are t
 `i` teaser. Class names prefixed `ytp-` are the player's own and have been stable
 for years — more reliable than the `ytd-*` feed renderers.
 
+## Domain note: "autoplay" is two things; suppressing the current video
+
+YouTube's player **Autoplay** switch only controls **auto-advance** (whether the
+*next* video plays). Stopping the **current** video from auto-starting when you
+open a watch page is a separate, unexposed problem: you must pause the `<video>`
+yourself. The robust way (Feature 5) is a **capture-phase `play` listener on
+`document`** — media events like `play` don't bubble, but the capture phase still
+delivers them — which calls `pause()` while suppression is armed. Arm it on
+`yt-navigate-finish` + initial load for `/watch`; **disarm on a genuine user
+gesture** (pointerdown on `#movie_player`, or Space/K) so manual play still works.
+Don't pause from the settings toggle itself — only change config, so you never
+yank the video the user is already watching (it applies to the next one opened).
+
 ## UI: Liquid Glass styling
 
 The settings panel and toast approximate Apple's **Liquid Glass** material

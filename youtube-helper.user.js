@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         YouTube Helper
 // @namespace    https://github.com/pvojnisek/youtube-helper
-// @version      0.4.1
-// @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (slider), and an option to hide Shorts everywhere (live-applying in-page settings panel).
+// @version      0.5.0
+// @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (slider), plus options to hide Shorts everywhere and the end-of-video suggestion overlays (end cards, end-screen grid, info cards) — all from a live-applying in-page settings panel.
 // @author       Peter Vojnisek
 // @license      MIT
 // @match        *://*.youtube.com/*
@@ -31,7 +31,15 @@
   const RATE_RANGE = { min: 2, max: 5, step: 0.25 };
   // maxRate: user-configurable ceiling (the slider). minRate: absolute floor when
   // slowing via Shift+, (unrelated to the slider's min). step: per-keypress delta.
-  const DEFAULTS = { maxRate: 5, minRate: 0.1, step: 0.25, hideShorts: true };
+  const DEFAULTS = {
+    maxRate: 5,
+    minRate: 0.1,
+    step: 0.25,
+    hideShorts: true,
+    hideEndCards: true, // creator end-screen cards overlaying the last seconds
+    hideEndScreen: true, // the "more videos" grid when a video ends
+    hideInfoCards: true, // the "i" info-card teaser mid-video
+  };
 
   function loadConfig() {
     try {
@@ -177,10 +185,56 @@
   // YouTube is an SPA; re-check after every in-app navigation.
   window.addEventListener("yt-navigate-finish", redirectShorts, true);
 
+  // === Feature 4: hide end-of-video suggestions (player overlays) =============
+  // (At document-start like Feature 3.) The creator end-screen cards
+  // (.ytp-ce-element) overlay the last ~5-20s of a video; the end-screen grid
+  // (.ytp-endscreen-content) fills the player when it ends; info cards (the "i"
+  // teaser/button) pop up mid-video. All live in the player's LIGHT DOM, so the
+  // same attribute-gated stylesheet hides them — one independent root attribute
+  // per toggle, so each can be switched on/off on its own.
+  const PLAYER_HIDES = [
+    {
+      attr: "data-ythelper-hide-endcards",
+      on: () => config.hideEndCards,
+      sel: [".ytp-ce-element"],
+    },
+    {
+      attr: "data-ythelper-hide-endscreen",
+      on: () => config.hideEndScreen,
+      sel: [".ytp-endscreen-content"],
+    },
+    {
+      attr: "data-ythelper-hide-infocards",
+      on: () => config.hideInfoCards,
+      sel: [".ytp-cards-teaser", ".ytp-cards-button"],
+    },
+  ];
+  const PLAYER_CSS = PLAYER_HIDES.map(
+    (h) =>
+      h.sel.map((s) => "html[" + h.attr + "] " + s).join(",\n") +
+      "{display:none !important}",
+  ).join("\n");
+  function injectPlayerCss() {
+    if (document.getElementById("ythelper-player-css")) return;
+    const style = document.createElement("style");
+    style.id = "ythelper-player-css";
+    style.textContent = PLAYER_CSS;
+    (document.head || document.documentElement).appendChild(style);
+  }
+  function applyPlayerHides() {
+    PLAYER_HIDES.forEach((h) =>
+      document.documentElement.toggleAttribute(h.attr, h.on()),
+    );
+  }
+  injectPlayerCss();
+  applyPlayerHides();
+
   // === Feature 2: in-page settings panel (toggle with Shift+S) ===============
   // Plain DOM + localStorage, no GM_* APIs → manager-independent and CSP-safe
   // (no inline event handlers; listeners are attached programmatically).
   let panel;
+  // Syncs the toggle checkboxes' state from config; assigned in buildPanel.
+  let refreshToggles = () => {};
   // Built with createElement/textContent (no innerHTML): YouTube enforces
   // Trusted Types, which blocks string-to-HTML assignment.
   function make(tag, style, text) {
@@ -307,26 +361,81 @@
       toast("Max: " + config.maxRate + "×");
     });
 
-    // "Hide Shorts" toggle — applies live (independent of Save/Cancel) so the
-    // effect is visible immediately; state is persisted on change.
-    const shortsRow = make(
-      "label",
-      "display:flex;align-items:center;gap:10px;margin-bottom:14px;" +
-        "cursor:pointer;user-select:none;-webkit-user-select:none;opacity:.95",
+    // Live toggles, grouped as a Liquid-Glass inset list (translucent fill, rim
+    // highlight, hairline row separators). Each flips its setting immediately and
+    // persists it; label on the left, checkbox on the right (settings-list style).
+    const toggles = [
+      {
+        label: "Hide Shorts everywhere",
+        get: () => config.hideShorts,
+        set: (v) => {
+          config.hideShorts = v;
+          applyShorts();
+          redirectShorts();
+        },
+      },
+      {
+        label: "Hide end-screen cards",
+        get: () => config.hideEndCards,
+        set: (v) => {
+          config.hideEndCards = v;
+          applyPlayerHides();
+        },
+      },
+      {
+        label: "Hide end-screen grid",
+        get: () => config.hideEndScreen,
+        set: (v) => {
+          config.hideEndScreen = v;
+          applyPlayerHides();
+        },
+      },
+      {
+        label: "Hide info cards",
+        get: () => config.hideInfoCards,
+        set: (v) => {
+          config.hideInfoCards = v;
+          applyPlayerHides();
+        },
+      },
+    ];
+    const togglesGroup = make(
+      "div",
+      "margin-bottom:16px;border-radius:14px;overflow:hidden;" +
+        "background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);" +
+        "box-shadow:inset 0 1px 0 rgba(255,255,255,.2)",
     );
-    const shortsCb = document.createElement("input");
-    shortsCb.type = "checkbox";
-    shortsCb.style.cssText =
-      "width:18px;height:18px;margin:0;accent-color:#30d158;cursor:pointer";
-    shortsRow.appendChild(shortsCb);
-    shortsRow.appendChild(document.createTextNode("Hide Shorts everywhere"));
-    shortsCb.addEventListener("change", () => {
-      config.hideShorts = shortsCb.checked;
-      saveConfig();
-      applyShorts();
-      redirectShorts();
-      toast(shortsCb.checked ? "Shorts hidden" : "Shorts shown");
+    const toggleCbs = [];
+    toggles.forEach((t, i) => {
+      const row = make(
+        "label",
+        "display:flex;align-items:center;justify-content:space-between;gap:12px;" +
+          "padding:9px 13px;cursor:pointer;user-select:none;-webkit-user-select:none;" +
+          "transition:background .12s;" +
+          (i ? "border-top:1px solid rgba(255,255,255,.1)" : ""),
+      );
+      row.addEventListener("mouseenter", () => {
+        row.style.background = "rgba(255,255,255,.08)";
+      });
+      row.addEventListener("mouseleave", () => {
+        row.style.background = "transparent";
+      });
+      row.appendChild(make("span", "opacity:.95", t.label));
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.style.cssText =
+        "width:18px;height:18px;margin:0;flex:none;accent-color:#30d158;cursor:pointer";
+      cb.addEventListener("change", () => {
+        t.set(cb.checked);
+        saveConfig();
+        toast(t.label + (cb.checked ? " — on" : " — off"));
+      });
+      row.appendChild(cb);
+      togglesGroup.appendChild(row);
+      toggleCbs.push(cb);
     });
+    refreshToggles = () =>
+      toggles.forEach((t, i) => (toggleCbs[i].checked = t.get()));
 
     // Everything applies live now, so there's no Save/Cancel — a single ✕ in the
     // top-right corner dismisses the panel (Esc and the gear toggle also close it).
@@ -355,7 +464,7 @@
     panel.appendChild(closeX);
     panel.appendChild(header);
     panel.appendChild(speedWrap);
-    panel.appendChild(shortsRow);
+    panel.appendChild(togglesGroup);
     panel.appendChild(shortcutRows());
 
     closeX.addEventListener("click", closePanel);
@@ -372,7 +481,7 @@
       Math.max(RATE_RANGE.min, config.maxRate),
     );
     slider.dispatchEvent(new Event("input")); // refresh the value label (no save)
-    panel.querySelector('input[type="checkbox"]').checked = config.hideShorts;
+    refreshToggles(); // sync all toggle checkboxes from config
     panel.style.display = "block";
     // Scale + fade entrance via the Web Animations API (no stylesheet needed).
     // Preserve any existing transform (centering, or "none" after a drag).

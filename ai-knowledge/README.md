@@ -89,6 +89,22 @@ not stylesheet text. Earlier features avoided a stylesheet by *stylistic choice*
 (hover via inline styles), not because one is blocked. A `<style>` is the right tool
 when you must hide many dynamic nodes declaratively.
 
+## Domain note: end-of-video overlays live in the player's light DOM
+
+The HTML5 player's overlays — creator **end-screen cards** (`.ytp-ce-element`,
+the suggestions that cover the last seconds), the **end-screen grid**
+(`.ytp-endscreen-content`), and **info cards** (`.ytp-cards-teaser` /
+`.ytp-cards-button`) — are plain light-DOM nodes inside `#movie_player`, **not**
+shadow DOM. So the exact same attribute-gated `display:none` stylesheet that hides
+Shorts (Feature 3) hides these too (Feature 4) — no per-frame JS, no timing against
+"last 20 seconds." `.ytp-ce-element` is the parent card container, so hiding it
+removes the whole card (image, shadows, title) without needing the sub-classes.
+
+Keep these distinct (each got its own toggle): end **cards** overlay mid-playback;
+the end **grid** only fills the player once the video ends; **info cards** are the
+`i` teaser. Class names prefixed `ytp-` are the player's own and have been stable
+for years — more reliable than the `ytd-*` feed renderers.
+
 ## UI: Liquid Glass styling
 
 The settings panel and toast approximate Apple's **Liquid Glass** material

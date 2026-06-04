@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-05
+
+### Added
+- Hide the end-of-video suggestion overlays, each with its own toggle in the
+  settings panel (all on by default): end-screen **cards** (the creator's
+  clickable suggestions that cover the last seconds, `.ytp-ce-element`), the
+  end-screen **grid** shown when a video ends (`.ytp-endscreen-content`), and
+  **info cards** (the "i" teaser, `.ytp-cards-teaser` / `.ytp-cards-button`).
+  Hidden via the same attribute-gated stylesheet as Shorts — one independent root
+  attribute per toggle.
+
+### Changed
+- The settings panel's on/off options are now grouped into one Liquid-Glass inset
+  list (translucent fill, rim highlight, hairline-separated rows; label on the
+  left, checkbox on the right).
+
 ## [0.4.1] - 2026-06-04
 
 ### Fixed

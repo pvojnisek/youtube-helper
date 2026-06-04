@@ -120,8 +120,12 @@ APIs are used — but it's proprietary.)
    On Chromium (Chrome/Brave/Edge **138+**), also enable it: `chrome://extensions`
    → Violentmonkey → **Details** → **Allow user scripts**. Firefox needs nothing
    extra.
-2. **Add the script:** open `youtube-helper.user.js` in the browser and confirm the
-   install prompt (or paste it into a new Violentmonkey script and save).
+2. **Add the script:** click
+   **[Install](https://raw.githubusercontent.com/pvojnisek/youtube-helper/main/youtube-helper.user.js)**
+   — with Violentmonkey installed, the `.user.js` link opens its install page; just
+   confirm. (The link goes live once the repo is published to GitHub; for local use,
+   open the `youtube-helper.user.js` file in the browser, or paste it into a new
+   Violentmonkey script and save.)
 
 Then open YouTube and press `Shift`+`S` to check it's running. For live-reload
 development, see [`ai-knowledge/`](ai-knowledge/).

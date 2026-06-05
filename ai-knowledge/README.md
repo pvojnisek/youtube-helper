@@ -42,6 +42,27 @@ See [`../README.md`](../README.md) for the user-facing overview and
    fine; only string-to-HTML assignment is blocked. Inline `element.style.cssText`
    is allowed.
 
+## Reusable implementation patterns
+
+Several features now share the same shapes — prefer these for new work instead of
+re-deriving:
+
+1. **Attribute-gated stylesheet (declarative hiding).** Inject one `<style>` whose
+   rules are gated on a root attribute —
+   `html[data-ythelper-…] <selector> { display:none !important }` — then
+   `toggleAttribute` to switch the whole rule set on/off at once. `display:none`
+   auto-covers nodes YouTube's SPA adds later, so no polling / MutationObserver.
+   Used by **hide Shorts**, **end-of-video overlays**, and **hover preview**. (A
+   `<style>` built with `createElement` + `textContent` is Trusted-Types-safe — see
+   the Shorts note.)
+2. **Live-applying settings toggles.** Each panel toggle flips `config` and calls an
+   `apply*()` that sets the attribute(s); it saves to `localStorage` and shows a
+   toast — no Save/Cancel. Toggles are built from a data list and re-synced from
+   config on open (`refreshToggles`), rendered as a Liquid-Glass grouped list.
+3. **Behaviour CSS can't express** (auto-start suppression, the `/shorts/`→`/watch`
+   redirect) → a **capture-phase listener at `document`/`window` level**, re-armed on
+   `yt-navigate-finish` (YouTube's SPA "navigation done" event) and at load.
+
 ## Domain note: why keyboard layout matters
 
 This is the bug the project's first feature fixes, and a reusable lesson.
@@ -68,12 +89,9 @@ single selector never covers them. The durable approach (used by Feature 3):
   across YouTube updates than generated class names. Add `:has(a[href^="/shorts"])`
   to also catch the *wrapper* row around a shelf/tile so the whole block disappears,
   not just the inner link.
-- **Hide with one injected stylesheet, gated on a root attribute** (`html[data-…]`).
-  A `display:none` rule auto-applies to nodes YouTube's SPA adds *later* — no
-  polling, no MutationObserver for the hiding itself. Flipping the attribute toggles
-  every surface at once (instant, no re-injection). This is what uBlock cosmetic
-  filters do; it beats the common `setInterval(removeShorts, 1000)` userscripts,
-  which flicker and waste cycles.
+- **Hidden via the attribute-gated stylesheet** (see *Reusable implementation
+  patterns* above) — like uBlock's cosmetic filters, and far better than the common
+  `setInterval(removeShorts, 1000)` scripts that flicker and waste cycles.
 - **CSS can't reach the `/shorts/<id>` player page.** Handle it in JS: redirect to
   `/watch?v=<id>` on load *and* on `yt-navigate-finish` (YouTube's SPA "navigation
   done" event), so a Short opened from an external link plays in the normal player.
@@ -94,11 +112,11 @@ when you must hide many dynamic nodes declaratively.
 The HTML5 player's overlays — creator **end-screen cards** (`.ytp-ce-element`,
 the suggestions that cover the last seconds), the **end-screen grid**
 (`.ytp-endscreen-content`), and **info cards** (`.ytp-cards-teaser` /
-`.ytp-cards-button`) — are plain light-DOM nodes inside `#movie_player`, **not**
-shadow DOM. So the exact same attribute-gated `display:none` stylesheet that hides
-Shorts (Feature 3) hides these too (Feature 4) — no per-frame JS, no timing against
+`.ytp-cards-button`) — are plain **light-DOM** nodes inside `#movie_player`, **not**
+shadow DOM. *That* is why the attribute-gated stylesheet (see *Reusable
+implementation patterns*) can hide them — no per-frame JS, no timing against the
 "last 20 seconds." `.ytp-ce-element` is the parent card container, so hiding it
-removes the whole card (image, shadows, title) without needing the sub-classes.
+removes the whole card (image, shadows, title) without the sub-classes.
 
 Keep these distinct (each got its own toggle): end **cards** overlay mid-playback;
 the end **grid** only fills the player once the video ends; **info cards** are the
@@ -179,15 +197,13 @@ without re-installing each time:
 1. **Serve the repo over localhost** (Python stdlib — nothing to install), run
    from the project directory:
    `python3 -m http.server 8080 --bind 127.0.0.1`
-2. **Install [Violentmonkey](https://violentmonkey.github.io/)** (MIT). On
-   Chromium / Brave 138+, enable it: `<browser>://extensions` → Violentmonkey →
-   *Details* → **Allow user scripts** (an MV3 requirement; Developer mode alone is
-   often not enough).
-3. **Track the file:** open `http://127.0.0.1:8080/youtube-helper.user.js` in the
-   browser; on Violentmonkey's install page click **Track external edits** and
-   keep that tab open. Every save then reinstalls the script automatically (no
-   `@version` bump needed for tracking).
-4. **Test:** reload the YouTube tab — an already-open page keeps the old version.
+2. **Track the file:** with Violentmonkey installed (see
+   [Installation](../README.md#installation) for the manager + the *Allow user
+   scripts* step), open `http://127.0.0.1:8080/youtube-helper.user.js` and — on its
+   install page — click **Track external edits** (not the normal install). Keep that
+   tab open: every save then reinstalls the script automatically, no `@version` bump
+   needed.
+3. **Test:** reload the YouTube tab — an already-open page keeps the old version.
 
 Notes:
 - Don't drag-and-drop the `.user.js` onto a Violentmonkey page: in Chromium that

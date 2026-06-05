@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-05
+
+### Added
+- Block the hover-preview that auto-plays when you point at a thumbnail in a list
+  (toggle in the settings panel, on by default). YouTube's shared inline preview
+  player (`ytd-video-preview`) is hidden via the same attribute-gated stylesheet as
+  the other options, so no muted preview plays over thumbnails on hover.
+
 ## [0.6.0] - 2026-06-05
 
 ### Added

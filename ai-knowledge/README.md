@@ -118,6 +118,15 @@ gesture** (pointerdown on `#movie_player`, or Space/K) so manual play still work
 Don't pause from the settings toggle itself — only change config, so you never
 yank the video the user is already watching (it applies to the next one opened).
 
+## Domain note: the hover-preview is one shared element
+
+The muted preview that plays when you hover a thumbnail in a list comes from a
+**single shared `ytd-video-preview` element** that YouTube reparents into the
+hovered thumbnail — not a per-tile player. So hiding that one element (Feature 6,
+attribute-gated CSS) stops the preview everywhere with one rule. The video may
+still load muted behind the hidden element, but it's invisible and silent;
+blocking it at the network level would need JS, which isn't worth it here.
+
 ## UI: Liquid Glass styling
 
 The settings panel and toast approximate Apple's **Liquid Glass** material

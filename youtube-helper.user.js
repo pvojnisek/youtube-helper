@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         YouTube Helper
 // @namespace    https://github.com/pvojnisek/youtube-helper
-// @version      0.6.0
-// @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (slider), an option to stop opened videos from auto-starting, and options to hide Shorts everywhere and the end-of-video suggestion overlays (end cards, end-screen grid, info cards) — all from a live-applying in-page settings panel.
+// @version      0.7.0
+// @description  Quality-of-life helpers for YouTube: keyboard-layout-independent playback-speed control with a configurable maximum (slider), options to stop opened videos from auto-starting and to block hover-preview playback in lists, and options to hide Shorts everywhere and the end-of-video suggestion overlays (end cards, end-screen grid, info cards) — all from a live-applying in-page settings panel.
 // @author       Peter Vojnisek
 // @license      MIT
 // @match        *://*.youtube.com/*
@@ -36,6 +36,7 @@
     minRate: 0.1,
     step: 0.25,
     autoStart: true, // when off, an opened watch-page video loads paused
+    blockHoverPreview: true, // hide the inline preview that plays on thumbnail hover
     hideShorts: true,
     hideEndCards: true, // creator end-screen cards overlaying the last seconds
     hideEndScreen: true, // the "more videos" grid when a video ends
@@ -269,6 +270,32 @@
   window.addEventListener("yt-navigate-finish", armAutoStart, true);
   armAutoStart();
 
+  // === Feature 6: block hover-preview playback in lists ======================
+  // Hovering a thumbnail loads YouTube's shared inline preview player and plays a
+  // muted preview. There's one shared `ytd-video-preview` element that gets moved
+  // into the hovered thumbnail, so hiding it stops the preview from showing
+  // anywhere — same attribute-gated stylesheet trick (no polling).
+  const HOVER_SELECTORS = ["ytd-video-preview", "#video-preview"];
+  const HOVER_CSS =
+    HOVER_SELECTORS.map(
+      (s) => "html[data-ythelper-no-hover-preview] " + s,
+    ).join(",\n") + "{display:none !important}";
+  function injectHoverCss() {
+    if (document.getElementById("ythelper-hover-css")) return;
+    const style = document.createElement("style");
+    style.id = "ythelper-hover-css";
+    style.textContent = HOVER_CSS;
+    (document.head || document.documentElement).appendChild(style);
+  }
+  function applyHoverPreview() {
+    document.documentElement.toggleAttribute(
+      "data-ythelper-no-hover-preview",
+      config.blockHoverPreview,
+    );
+  }
+  injectHoverCss();
+  applyHoverPreview();
+
   // === Feature 2: in-page settings panel (toggle with Shift+S) ===============
   // Plain DOM + localStorage, no GM_* APIs → manager-independent and CSP-safe
   // (no inline event handlers; listeners are attached programmatically).
@@ -410,6 +437,14 @@
         get: () => config.autoStart,
         set: (v) => {
           config.autoStart = v; // takes effect on the next video opened
+        },
+      },
+      {
+        label: "Block hover previews",
+        get: () => config.blockHoverPreview,
+        set: (v) => {
+          config.blockHoverPreview = v;
+          applyHoverPreview();
         },
       },
       {

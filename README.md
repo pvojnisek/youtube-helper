@@ -35,9 +35,10 @@ longer pops up, while the plain (un-shifted) `,` / `.` frame-stepping still work
 Press `Shift`+`S` (or click the toolbar gear) to open a small in-page settings
 panel. Settings apply **live** — there's no Save button. A slider sets the
 **maximum playback speed** (range 2–5×); the value updates as you drag and is
-saved when you release it. A grouped list of checkboxes toggles auto-start,
-**Hide Shorts**, and the end-of-video overlays instantly. Dismiss the panel with
-the ✕ in its top-right corner (or `Esc`). All settings are stored
+saved when you release it. A grouped list of checkboxes toggles the on/off options
+(auto-start, hover previews, **Hide Shorts**, and the end-of-video overlays)
+instantly. Dismiss the panel with the ✕ in its top-right corner (or `Esc`). All
+settings are stored
 in `localStorage`, so they persist across sessions and work under any userscript
 manager — no `GM_*` APIs are used, which keeps the script manager-independent.
 
@@ -83,6 +84,14 @@ first real gesture on the player, so manual playback still works. This affects t
 *current* video — distinct from the player's **Autoplay** switch, which only
 controls whether the **next** video plays automatically.
 
+### 6. Block hover previews
+
+Pointing at a thumbnail in a list makes YouTube auto-play a muted **preview** after
+a moment, which some find distracting. With **Block hover previews** on (the
+default), that's suppressed — YouTube's shared inline preview player
+(`ytd-video-preview`) is hidden, so thumbnails stay still on hover. Toggle it in the
+settings panel.
+
 ## Roadmap
 
 - [x] Keyboard-layout-independent playback speed
@@ -91,6 +100,7 @@ controls whether the **next** video plays automatically.
 - [x] Hide Shorts everywhere (toggle), with `/shorts/` → `/watch` redirect
 - [x] Hide end-of-video suggestions (end cards, end-screen grid, info cards)
 - [x] Stop opened videos from auto-starting (toggle)
+- [x] Block hover-preview playback in lists (toggle)
 - [ ] More features — one step at a time
 
 ### Deferred / ideas

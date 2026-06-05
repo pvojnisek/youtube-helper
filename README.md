@@ -120,8 +120,6 @@ settings panel.
 
 ## Installation
 
-> Not published online yet — install it locally.
-
 Use **[Violentmonkey](https://violentmonkey.github.io/get-it/)** — it's open
 source (MIT), the same licence as this script. (Tampermonkey works too — no `GM_*`
 APIs are used — but it's proprietary.)
@@ -133,9 +131,7 @@ APIs are used — but it's proprietary.)
 2. **Add the script:** click
    **[Install](https://raw.githubusercontent.com/pvojnisek/youtube-helper/main/youtube-helper.user.js)**
    — with Violentmonkey installed, the `.user.js` link opens its install page; just
-   confirm. (The link goes live once the repo is published to GitHub; for local use,
-   open the `youtube-helper.user.js` file in the browser, or paste it into a new
-   Violentmonkey script and save.)
+   confirm. (Or paste the file into a new Violentmonkey script and save.)
 
 Then open YouTube and press `Shift`+`S` to check it's running. For live-reload
 development, see [`ai-knowledge/`](ai-knowledge/).
